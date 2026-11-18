@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resqverse AI - Emergency Response & Humanitarian Logistics</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        emergency: {
+                            500: '#ef4444',
+                            600: '#dc2626',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Supplier Analytics Graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-shield-heart text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">Resqverse AI</span>
+                    <span class="hidden sm:inline-block ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium">Enterprise v3.5</span>
+                </div>
+            </div>
+
+            <!-- Panel Switcher Navigation -->
+            <nav class="hidden md:flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                <button onclick="switchPanel('user')" id="nav-user" class="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-sm">
+                    <i class="fa-solid fa-user-shield"></i> User Panel
+                </button>
+                <button onclick="switchPanel('supplier')" id="nav-supplier" class="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-boxes-stacked"></i> Supplier Panel
+                </button>
+                <button onclick="switchPanel('coordinator')" id="nav-coordinator" class="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-tower-broadcast"></i> Coordinator Panel
+                </button>
+            </nav>
+
+            <!-- Right Actions: Theme Toggle, Low Connectivity, Status -->
+            <div class="flex items-center gap-3">
+                <!-- Low Connectivity Toggle Indicator -->
+                <button onclick="toggleLowConnectivity()" id="top-connectivity-btn" title="Toggle Low Connectivity Mode" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium text-emerald-600 dark:text-emerald-400 transition-all">
+                    <i id="top-connectivity-icon" class="fa-solid fa-signal"></i>
+                    <span id="top-connectivity-text">Online (5G)</span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Panel Switcher Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 flex flex-col gap-2">
+            <button onclick="switchPanel('user'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400">
+                <i class="fa-solid fa-user-shield"></i> User Panel
+            </button>
+            <button onclick="switchPanel('supplier'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                <i class="fa-solid fa-boxes-stacked"></i> Supplier Panel
+            </button>
+            <button onclick="switchPanel('coordinator'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                <i class="fa-solid fa-tower-broadcast"></i> Coordinator Panel
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area containing the 3 Panels -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ======================================================== -->
+        <!-- 1. USER PANEL                                           -->
+        <!-- ======================================================== -->
+        <section id="panel-user" class="space-y-6">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="max-w-2xl relative z-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold mb-3">
+                        <i class="fa-solid fa-bolt text-amber-300"></i> Citizen & Field Request Hub
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">AI Emergency & Need Request Portal</h1>
+                    <p class="mt-2 text-blue-100 text-sm md:text-base">Submit emergency situations, describe distress in any language or audio note, and let our AI Matcher instantly dispatch resources.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left 2 Cols: Request Form & AI Need Detector -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Feature 1: AI Need Detector Input Card -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-brain text-blue-600"></i> Feature 1: AI Need Detector
+                            </h2>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-medium">NLP & Audio AI Active</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Describe your emergency or supply shortage in natural language or voice. Our AI will automatically categorize severity, extract required items, and map urgency.</p>
+                        
+                        <form id="emergency-form" onsubmit="handleEmergencySubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Your Name / Location / Contact</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <input type="text" id="req-name" required placeholder="Full Name" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <input type="text" id="req-location" required placeholder="Sector / Zone / Coordinates" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <input type="text" id="req-contact" required placeholder="Phone / Radio ID" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Emergency Description / Distress Signal</label>
+                                    <button type="button" onclick="simulateVoiceInput()" class="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 hover:underline">
+                                        <i class="fa-solid fa-microphone"></i> Simulate Voice Dictation
+                                    </button>
+                                </div>
+                                <textarea id="req-description" rows="3" required placeholder="e.g., We have 45 flood survivors stranded on roof at Sector 4, 3 elderly needing insulin, clean drinking water exhausted..." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Primary Urgency Level</label>
+                                    <select id="req-urgency" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="Critical">Critical (Life Threatening)</option>
+                                        <option value="High" selected>High (Urgent Need)</option>
+                                        <option value="Moderate">Moderate (Standard)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Primary Need Category</label>
+                                    <select id="req-category" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="Medical & Insulin">Medical & Pharmacy</option>
+                                        <option value="Clean Water & Food">Clean Water & Food Packets</option>
+                                        <option value="Rescue & Evacuation">Rescue & Evacuation Boats</option>
+                                        <option value="Shelter & Blankets">Shelter & Blankets</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Process & Submit via AI Detector
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Feature 7: Case Timeline & Feature 2: Unmet Need Detector Widget -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Feature 2: Unmet Need Detector -->
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="font-semibold text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-radar text-amber-500"></i> Feature 2: Unmet Need Detector
+                                    </h3>
+                                    <span class="text-xs px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400">AI Gap Analysis</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">AI scans regional relief requests versus available supplier inventory to detect critical supply voids.</p>
+                                
+                                <div id="unmet-list" class="space-y-2.5 text-xs">
+                                    <!-- Dynamic Unmet Needs -->
+                                    <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center justify-between">
+                                        <div>
+                                            <p class="font-semibold text-amber-800 dark:text-amber-300">Pediatric Antibiotics (Sector 7)</p>
+                                            <p class="text-[11px] text-amber-600 dark:text-amber-400">Demand: 120 units | Available: 15 units</p>
+                                        </div>
+                                        <span class="px-2 py-1 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 rounded font-semibold">Critical Void</span>
+                                    </div>
+                                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                        <div>
+                                            <p class="font-semibold text-slate-700 dark:text-slate-200">Solar Power Banks (North Zone)</p>
+                                            <p class="text-[11px] text-slate-500">Demand: 80 units | Available: 40 units</p>
+                                        </div>
+                                        <span class="px-2 py-1 bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded font-semibold">Moderate Gap</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 7: Case Timeline preview -->
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-timeline text-indigo-600"></i> Feature 7: Case Timeline
+                                </h3>
+                                <span class="text-xs text-slate-400">Live Audit Log</span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Chronological verification history of active cases.</p>
+                            
+                            <div class="relative pl-4 space-y-3 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800 text-xs">
+                                <div class="relative">
+                                    <div class="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-4 ring-blue-100 dark:ring-blue-950"></div>
+                                    <p class="font-semibold">AI Request Parsed & Classified</p>
+                                    <p class="text-[11px] text-slate-400">10 mins ago • Automated NLP Detector</p>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-950"></div>
+                                    <p class="font-semibold">Smart Matcher Assigned Supplier</p>
+                                    <p class="text-[11px] text-slate-400">8 mins ago • Apex Logistics Hub</p>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-4 ring-amber-100 dark:ring-amber-950"></div>
+                                    <p class="font-semibold">Dispatched in Transit (Low-Bandwidth Mode)</p>
+                                    <p class="text-[11px] text-slate-400">2 mins ago • GPS Verified</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Col: Feature 3 & Feature 5 (Smart Matcher & Language Bridge) -->
+                <div class="space-y-6">
+                    <!-- Feature 3: Smart Resource Matcher -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-network-wired text-indigo-600"></i> Feature 3: Smart Matcher
+                            </h2>
+                            <span class="text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded font-bold">AI Optimized</span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Algorithmic matching of requests to nearest verified supplier inventory based on proximity and stock availability.</p>
+                        
+                        <div id="smart-matches-container" class="space-y-3">
+                            <div class="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="font-semibold text-xs">Medical Relief Kit #402</h4>
+                                    <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-medium">98% Match</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Matched Supplier: BioPharm Global (1.2 km away)</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] text-slate-400">ETA: 14 mins</span>
+                                    <button onclick="dispatchMatch('BioPharm Global', 'Medical Relief Kit')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-medium transition-all">Dispatch Now</button>
+                                </div>
+                            </div>
+                            <div class="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h4 class="font-semibold text-xs">Potable Water Pallets</h4>
+                                    <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-medium">94% Match</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Matched Supplier: AquaPure Logistics (3.5 km away)</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] text-slate-400">ETA: 22 mins</span>
+                                    <button onclick="dispatchMatch('AquaPure Logistics', 'Potable Water')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-medium transition-all">Dispatch Now</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 5: Language Bridge -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-language text-purple-600"></i> Feature 5: Language Bridge
+                            </h2>
+                            <span class="text-[10px] bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded font-bold">Auto-Translate</span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Translate distress signals or messages instantly between local dialects and coordinator English.</p>
+                        
+                        <div class="space-y-3">
+                            <textarea id="bridge-input" rows="2" placeholder="Enter text in Spanish, French, Hindi, or Arabic..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">Necesitamos ayuda urgente, falta agua potable y suministros médicos en el sector norte.</textarea>
+                            <div class="flex items-center gap-2">
+                                <select id="bridge-target" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none">
+                                    <option value="English">Translate to English</option>
+                                    <option value="Spanish">Translate to Spanish</option>
+                                    <option value="Hindi">Translate to Hindi</option>
+                                    <option value="Arabic">Translate to Arabic</option>
+                                </select>
+                                <button onclick="translateMessage()" class="flex-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-all">Translate</button>
+                            </div>
+                            <div id="bridge-output" class="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 text-xs text-purple-900 dark:text-purple-200 italic">
+                                Translation preview will appear here...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 2. SUPPLIER PANEL                                       -->
+        <!-- ======================================================== -->
+        <section id="panel-supplier" class="space-y-6 hidden">
+            <div class="bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="max-w-2xl relative z-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold mb-3">
+                        <i class="fa-solid fa-boxes-stacked text-emerald-400"></i> Vendor & Inventory Hub
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Supplier Portal & Analytics</h1>
+                    <p class="mt-2 text-slate-300 text-sm md:text-base">Register new relief supplies, fulfill incoming citizen requests in real-time, and monitor supply performance graphs.</p>
+                </div>
+            </div>
+
+            <!-- Incoming Citizen Requests Feed for Suppliers -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-amber-500 animate-pulse"></i> Live Incoming User Requests Feed
+                    </h2>
+                    <span id="supplier-req-count" class="text-xs bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium">0 Active Requests</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Requests submitted by citizens in the User Panel appear here instantly for inventory allocation and fulfillment.</p>
+                <div id="supplier-incoming-requests" class="space-y-3">
+                    <!-- Populated dynamically via JS shared state -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-center text-xs text-slate-400">
+                        No active user requests in queue. Submit a request in the User Panel to see it appear here instantly.
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Col: Supplier Registration Form -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus text-blue-600"></i> Supplier Registration Form
+                        </h2>
+                        <span class="text-xs bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-medium">Vendor Onboarding</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Register your organization to integrate into Resqverse AI's automated smart resource matcher.</p>
+
+                    <form id="supplier-reg-form" onsubmit="handleSupplierRegistration(event)" class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Organization Name</label>
+                            <input type="text" id="sup-org" required placeholder="e.g., RedCross Logistics Ltd" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Contact Person</label>
+                                <input type="text" id="sup-contact-person" required placeholder="Full Name" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Phone / Radio</label>
+                                <input type="text" id="sup-phone" required placeholder="+1 (555) 019-2831" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Primary Supply Category</label>
+                            <select id="sup-category" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Medical Supplies & Pharma">Medical Supplies & Pharma</option>
+                                <option value="Potable Water & Food Rations">Potable Water & Food Rations</option>
+                                <option value="Rescue Equipment & Boats">Rescue Equipment & Boats</option>
+                                <option value="Temporary Shelter & Tents">Temporary Shelter & Tents</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Initial Stock Units</label>
+                                <input type="number" id="sup-stock" required min="10" value="500" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Warehouse Zone</label>
+                                <input type="text" id="sup-zone" required placeholder="Zone North-3" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Compliance & Certifications</label>
+                            <input type="text" id="sup-compliance" placeholder="ISO 9001 / WHO Certified Relief Partner" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-medium rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-md">
+                            <i class="fa-solid fa-circle-check"></i> Complete Supplier Registration
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right 2 Cols: Graphs & Analytics Dashboard -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-base font-bold flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-line text-emerald-500"></i> Supplier Performance & Inventory Graphs
+                                </h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Live analytics on fulfillment rates, dispatch turnaround times, and stock allocation.</p>
+                            </div>
+                            <span class="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full font-medium">Live Telemetry</span>
+                        </div>
+
+                        <!-- Graph Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Chart 1: Supply Fulfillment Over Time -->
+                            <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Weekly Supply Dispatches (Units)</h3>
+                                <div class="h-48 relative">
+                                    <canvas id="supplierFulfillmentChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Chart 2: Category Breakdown -->
+                            <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
+                                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Inventory Category Distribution</h3>
+                                <div class="h-48 relative flex items-center justify-center">
+                                    <canvas id="supplierCategoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Registered Suppliers List Table -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <h3 class="text-sm font-bold mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-list text-blue-600"></i> Active Registered Suppliers in Network
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold uppercase">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Organization</th>
+                                        <th class="py-2.5 px-3">Category</th>
+                                        <th class="py-2.5 px-3">Stock Units</th>
+                                        <th class="py-2.5 px-3">Zone</th>
+                                        <th class="py-2.5 px-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registered-suppliers-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tr>
+                                        <td class="py-3 px-3 font-semibold">BioPharm Global Ltd</td>
+                                        <td class="py-3 px-3 text-slate-500">Medical Supplies</td>
+                                        <td class="py-3 px-3 font-medium">1,450 units</td>
+                                        <td class="py-3 px-3 text-slate-500">Zone Alpha</td>
+                                        <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-600 font-semibold">Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-3 font-semibold">AquaPure Logistics</td>
+                                        <td class="py-3 px-3 text-slate-500">Potable Water</td>
+                                        <td class="py-3 px-3 font-medium">4,200 units</td>
+                                        <td class="py-3 px-3 text-slate-500">Zone Beta</td>
+                                        <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-600 font-semibold">Active</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-3 font-semibold">Apex Rescue Gear</td>
+                                        <td class="py-3 px-3 text-slate-500">Rescue Boats</td>
+                                        <td class="py-3 px-3 font-medium">320 units</td>
+                                        <td class="py-3 px-3 text-slate-500">Zone Delta</td>
+                                        <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-600 font-semibold">Active</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 3. COORDINATOR PANEL                                    -->
+        <!-- ======================================================== -->
+        <section id="panel-coordinator" class="space-y-6 hidden">
+            <div class="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="max-w-2xl relative z-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold mb-3">
+                        <i class="fa-solid fa-tower-broadcast text-blue-400"></i> Command & Control Center
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Live Coordination Dashboard</h1>
+                    <p class="mt-2 text-indigo-200 text-sm md:text-base">Real-time situational awareness, emergency case tracking, and low-connectivity mesh network status.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left 2 Cols: Feature 4 & 6 (Live Coordination Dashboard & Low Connectivity Mode) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Feature 4: Live Coordination Dashboard (Map & Active Dispatches) -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-base font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-blue-600"></i> Feature 4: Live Coordination Map & Dispatches
+                            </h2>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="text-xs font-semibold text-slate-500">AI Mesh Connected</span>
+                            </div>
+                        </div>
+
+                        <!-- Simulated Interactive Map Container -->
+                        <div class="w-full h-72 rounded-xl bg-slate-100 dark:bg-slate-800 relative overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                            <!-- Simulated Grid Background -->
+                            <div class="absolute inset-0 opacity-20 dark:opacity-30 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:20px_20px]"></div>
+                            
+                            <!-- Map Markers -->
+                            <div class="absolute top-1/4 left-1/3 flex flex-col items-center animate-bounce">
+                                <span class="px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full shadow-lg">Critical SOS</span>
+                                <i class="fa-solid fa-location-dot text-red-500 text-xl"></i>
+                            </div>
+
+                            <div class="absolute bottom-1/3 right-1/4 flex flex-col items-center">
+                                <span class="px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-bold rounded-full shadow-lg">Supplier Hub</span>
+                                <i class="fa-solid fa-warehouse text-emerald-500 text-xl"></i>
+                            </div>
+
+                            <div class="absolute top-1/2 right-1/3 flex flex-col items-center">
+                                <span class="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full shadow-lg">Active Convoy</span>
+                                <i class="fa-solid fa-truck-fast text-blue-500 text-xl"></i>
+                            </div>
+
+                            <div class="absolute bottom-4 left-4 glass-panel px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                                <p class="font-semibold text-slate-800 dark:text-slate-200">Sector Alpha Radar</p>
+                                <p class="text-[11px] text-slate-500">14 Active Cases • 6 Convoys En Route</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 6: Low Connectivity Mode Simulator -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-base font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-satellite-dish text-amber-500"></i> Feature 6: Low Connectivity Mode & Mesh Sync
+                            </h2>
+                            <button onclick="toggleLowConnectivity()" id="panel-conn-toggle-btn" class="px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all">
+                                Switch to Offline/LoRa Mesh
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">When cellular networks collapse during disasters, Resqverse AI switches to encrypted offline store-and-forward SMS and LoRa radio frequency packet synchronization.</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <p class="text-slate-400 uppercase font-semibold text-[10px] mb-1">Network Status</p>
+                                <p id="mesh-status-text" class="font-bold text-emerald-600 dark:text-emerald-400 text-sm">Online (5G / Starlink)</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <p class="text-slate-400 uppercase font-semibold text-[10px] mb-1">Buffered Packets</p>
+                                <p id="buffered-packets" class="font-bold text-slate-800 dark:text-slate-200 text-sm">0 Pending Sync</p>
+                            </div>
+                            <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <p class="text-slate-400 uppercase font-semibold text-[10px] mb-1">Mesh Peers Active</p>
+                                <p class="font-bold text-blue-600 dark:text-blue-400 text-sm">18 Nodes Nearby</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Col: Active Dispatch Queue & Quick Actions -->
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-wider mb-4 flex items-center justify-between">
+                            <span>Active Emergency Queue</span>
+                            <span class="text-xs bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 px-2 py-0.5 rounded font-bold">4 Critical</span>
+                        </h2>
+
+                        <div id="coordinator-queue" class="space-y-3 text-xs">
+                            <div class="p-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="font-semibold text-red-800 dark:text-red-300">Sector 4 Roof Stranded</span>
+                                    <span class="text-[10px] bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 px-1.5 py-0.5 rounded">Critical</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mb-2">Need: Medical & Water | 45 Survivors</p>
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <span class="text-slate-400">Assigned: BioPharm</span>
+                                    <span class="text-emerald-600 font-semibold">Dispatched</span>
+                                </div>
+                            </div>
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="font-semibold text-slate-800 dark:text-slate-200">Sector 9 Shelter Outage</span>
+                                    <span class="text-[10px] bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded">High Urgency</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mb-2">Need: Generators & Blankets</p>
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <span class="text-slate-400">Assigned: Apex Gear</span>
+                                    <span class="text-amber-600 font-semibold">In Transit</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                        <h3 class="text-xs font-bold uppercase tracking-wider mb-3">Broadcast Emergency Alert</h3>
+                        <textarea id="broadcast-msg" rows="2" placeholder="Type broadcast message for all field coordinators..." class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none mb-3"></textarea>
+                        <button onclick="sendBroadcast()" class="w-full py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-medium rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-bullhorn"></i> Broadcast Emergency Alert
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-400">
+        <p>&copy; 2026 Resqverse AI. Humanitarian Disaster Response Systems. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Global Shared Application State
+        const appState = {
+            requests: [
+                {
+                    id: 1,
+                    name: "Maria Santos",
+                    location: "Sector 4, North Zone",
+                    contact: "+1 (555) 382-9102",
+                    description: "We have 45 flood survivors stranded on roof at Sector 4, 3 elderly needing insulin, clean drinking water exhausted...",
+                    urgency: "Critical",
+                    category: "Medical & Insulin",
+                    timestamp: "12 mins ago",
+                    status: "Dispatched"
+                },
+                {
+                    id: 2,
+                    name: "Dr. Aris Thorne",
+                    location: "Sector 9 Community Center",
+                    contact: "+1 (555) 902-1184",
+                    description: "Shelter backup power generator failing. Need replacement fuel and portable solar chargers for medical monitoring units.",
+                    urgency: "High",
+                    category: "Shelter & Blankets",
+                    timestamp: "25 mins ago",
+                    status: "Pending Match"
+                }
+            ],
+            suppliers: [
+                { org: "BioPharm Global Ltd", category: "Medical Supplies", stock: "1,450 units", zone: "Zone Alpha", status: "Active" },
+                { org: "AquaPure Logistics", category: "Potable Water", stock: "4,200 units", zone: "Zone Beta", status: "Active" },
+                { org: "Apex Rescue Gear", category: "Rescue Boats", stock: "320 units", zone: "Zone Delta", status: "Active" }
+            ]
+        };
+
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-sun';
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-moon';
+            }
+        }
+
+        // Panel Switcher Logic
+        function switchPanel(panelName) {
+            ['user', 'supplier', 'coordinator'].forEach(p => {
+                const sec = document.getElementById(`panel-${p}`);
+                const nav = document.getElementById(`nav-${p}`);
+                if (p === panelName) {
+                    sec.classList.remove('hidden');
+                    nav.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-sm";
+                } else {
+                    sec.classList.add('hidden');
+                    nav.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+                }
+            });
+            // Resize charts if supplier panel is opened
+            if (panelName === 'supplier') {
+                setTimeout(() => {
+                    if (fulfillmentChartInstance) fulfillmentChartInstance.resize();
+                    if (categoryChartInstance) categoryChartInstance.resize();
+                }, 100);
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Toast Notification System (replaces alert)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgCol = type === 'success' ? 'bg-emerald-600' : (type === 'error' ? 'bg-red-600' : 'bg-blue-600');
+            toast.className = `${bgCol} text-white px-4 py-3 rounded-xl shadow-lg text-xs font-medium flex items-center gap-3 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-sm"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Feature 1: Simulated Voice Dictation
+        function simulateVoiceInput() {
+            const textAreas = [
+                "Urgent: Severe flash flooding at Sector 12. 30 people trapped without drinking water or insulin supplies.",
+                "Emergency request: Need emergency medical kits and baby formula at Community Center Shelter B.",
+                "Critical situation: Power grid failure at regional hospital, backup generators running low on diesel fuel."
+            ];
+            const randomText = textAreas[Math.floor(Math.random() * textAreas.length)];
+            document.getElementById('req-description').value = randomText;
+            showToast("Voice transcribed successfully via AI Speech-to-Text.", "info");
+        }
+
+        // Feature 1: Emergency Form Submission
+        function handleEmergencySubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('req-name').value;
+            const location = document.getElementById('req-location').value;
+            const contact = document.getElementById('req-contact').value;
+            const desc = document.getElementById('req-description').value;
+            const urgency = document.getElementById('req-urgency').value;
+            const category = document.getElementById('req-category').value;
+
+            const newReq = {
+                id: Date.now(),
+                name,
+                location,
+                contact,
+                description: desc,
+                urgency,
+                category,
+                timestamp: "Just now",
+                status: "Pending Match"
+            };
+
+            appState.requests.unshift(newReq);
+            renderAllFeeds();
+
+            showToast(`AI Need Detector processed request for ${name} (${urgency}). Synced across all panels!`);
+            document.getElementById('emergency-form').reset();
+        }
+
+        // Render Shared State Across Panels
+        function renderAllFeeds() {
+            // 1. Render Supplier Incoming Requests Feed
+            const supplierFeed = document.getElementById('supplier-incoming-requests');
+            const supplierCount = document.getElementById('supplier-req-count');
+            supplierCount.textContent = `${appState.requests.length} Active Requests`;
+
+            if (appState.requests.length === 0) {
+                supplierFeed.innerHTML = `
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-center text-xs text-slate-400">
+                        No active user requests in queue.
+                    </div>
+                `;
+            } else {
+                supplierFeed.innerHTML = appState.requests.map(req => `
+                    <div class="p-4 rounded-xl border ${req.urgency === 'Critical' ? 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-xs">${req.location}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded font-semibold ${req.urgency === 'Critical' ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300'}">${req.urgency}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">${req.category}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 dark:text-slate-300">${req.description}</p>
+                            <p class="text-[11px] text-slate-400">Citizen: ${req.name} (${req.contact}) • ${req.timestamp}</p>
+                        </div>
+                        <div class="flex items-center gap-2 self-end sm:self-center">
+                            <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">${req.status}</span>
+                            <button onclick="fulfillRequest(${req.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-all shadow-sm">
+                                Fulfill & Dispatch
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 2. Render Coordinator Queue
+            const coordQueue = document.getElementById('coordinator-queue');
+            if (coordQueue) {
+                coordQueue.innerHTML = appState.requests.map(req => `
+                    <div class="p-3 rounded-xl border ${req.urgency === 'Critical' ? 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'}">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="font-semibold text-slate-800 dark:text-slate-200">${req.location}: ${req.category}</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded font-semibold ${req.urgency === 'Critical' ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300'}">${req.urgency}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-2">${req.description.substring(0, 60)}...</p>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-slate-400">By: ${req.name}</span>
+                            <span class="text-emerald-600 font-semibold">${req.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function fulfillRequest(id) {
+            const req = appState.requests.find(r => r.id === id);
+            if (req) {
+                req.status = "Fulfilled & Dispatched";
+                renderAllFeeds();
+                showToast(`Successfully dispatched supplies for request at ${req.location}!`);
+            }
+        }
+
+        // Feature 3: Dispatch Match
+        function dispatchMatch(supplier, item) {
+            showToast(`Convoy successfully dispatched from ${supplier} for ${item}!`);
+        }
+
+        // Feature 5: Language Bridge Translation
+        function translateMessage() {
+            const input = document.getElementById('bridge-input').value;
+            const target = document.getElementById('bridge-target').value;
+            const output = document.getElementById('bridge-output');
+            
+            output.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Translating to ${target}...`;
+            setTimeout(() => {
+                output.innerHTML = `<strong>[Translated to ${target}]:</strong> We need urgent assistance, clean drinking water and medical supplies are missing in the northern sector. (AI Verified Confidence: 99.4%)`;
+            }, 600);
+        }
+
+        // Supplier Registration Form Handler
+        function handleSupplierRegistration(e) {
+            e.preventDefault();
+            const org = document.getElementById('sup-org').value;
+            const cat = document.getElementById('sup-category').value;
+            const stock = document.getElementById('sup-stock').value;
+            const zone = document.getElementById('sup-zone').value;
+
+            appState.suppliers.push({ org, category: cat, stock: `${stock} units`, zone, status: "Active" });
+
+            showToast(`Supplier '${org}' successfully registered and synced with AI Matcher.`);
+
+            // Add to table
+            const tbody = document.getElementById('registered-suppliers-tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="py-3 px-3 font-semibold">${org}</td>
+                <td class="py-3 px-3 text-slate-500">${cat}</td>
+                <td class="py-3 px-3 font-medium">${stock} units</td>
+                <td class="py-3 px-3 text-slate-500">${zone}</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-600 font-semibold">Active</span></td>
+            `;
+            tbody.prepend(row);
+            document.getElementById('supplier-reg-form').reset();
+        }
+
+        // Feature 6: Low Connectivity Mode Toggle
+        let isLowConnectivity = false;
+        function toggleLowConnectivity() {
+            isLowConnectivity = !isLowConnectivity;
+            const topBtn = document.getElementById('top-connectivity-btn');
+            const topIcon = document.getElementById('top-connectivity-icon');
+            const topText = document.getElementById('top-connectivity-text');
+            const meshStatus = document.getElementById('mesh-status-text');
+            const panelBtn = document.getElementById('panel-conn-toggle-btn');
+            const buffered = document.getElementById('buffered-packets');
+
+            if (isLowConnectivity) {
+                topBtn.className = "hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-xs font-medium text-amber-600 dark:text-amber-400 transition-all";
+                topIcon.className = "fa-solid fa-triangle-exclamation";
+                topText.textContent = "Offline (LoRa Mesh)";
+                meshStatus.textContent = "Offline LoRa Mesh Active";
+                meshStatus.className = "font-bold text-amber-600 dark:text-amber-400 text-sm";
+                panelBtn.textContent = "Switch to 5G / Cloud Online";
+                panelBtn.className = "px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 text-xs font-bold transition-all";
+                buffered.textContent = "3 Packets Stored (Sync Pending)";
+                showToast("Switched to Low Connectivity Mode: Store-and-Forward LoRa Mesh active.", "info");
+            } else {
+                topBtn.className = "hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-medium text-emerald-600 dark:text-emerald-400 transition-all";
+                topIcon.className = "fa-solid fa-signal";
+                topText.textContent = "Online (5G)";
+                meshStatus.textContent = "Online (5G / Starlink)";
+                meshStatus.className = "font-bold text-emerald-600 dark:text-emerald-400 text-sm";
+                panelBtn.textContent = "Switch to Offline/LoRa Mesh";
+                panelBtn.className = "px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all";
+                buffered.textContent = "0 Pending Sync";
+                showToast("Reconnected to Cloud 5G network. Mesh synced successfully.", "success");
+            }
+        }
+
+        function sendBroadcast() {
+            const msg = document.getElementById('broadcast-msg').value;
+            if (!msg.trim()) {
+                showToast("Please enter a broadcast message.", "error");
+                return;
+            }
+            showToast("Emergency broadcast sent to all field units and suppliers.");
+            document.getElementById('broadcast-msg').value = "";
+        }
+
+        // Initialize Chart.js Graphs for Supplier Panel
+        let fulfillmentChartInstance = null;
+        let categoryChartInstance = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAllFeeds();
+
+            const ctx1 = document.getElementById('supplierFulfillmentChart').getContext('2d');
+            fulfillmentChartInstance = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Dispatched Units',
+                        data: [420, 680, 890, 1120, 950, 1450, 1820],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(150,150,150,0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('supplierCategoryChart').getContext('2d');
+            categoryChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Medical', 'Water & Food', 'Rescue Gear', 'Shelter'],
+                    datasets: [{
+                        data: [35, 40, 15, 10],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
